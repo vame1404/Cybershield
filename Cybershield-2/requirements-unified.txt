@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+pydantic
+numpy
+pandas
+torch
+pillow
+joblib
+tensorflow
+scikit-learn
+xgboost
+email-validator>=2.0
+python-multipart
