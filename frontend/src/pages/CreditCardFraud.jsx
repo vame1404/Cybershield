@@ -88,7 +88,7 @@ export default function CreditCardFraud() {
                     <h2 className="text-xl font-bold mb-4 flex items-center justify-between text-white">
                         <span>Analytics Summary</span>
                         {result && result.download_url && (
-                            <a href={`http://localhost:8000${result.download_url}`} download className="flex items-center gap-2 text-sm bg-cyber-primary/20 text-cyber-primary px-3 py-1 rounded-full hover:bg-cyber-primary/40 transition border border-cyber-primary/30">
+                            <a href={`${import.meta.env.VITE_API_BASE_URL}${result.download_url}`} download className="flex items-center gap-2 text-sm bg-cyber-primary/20 text-cyber-primary px-3 py-1 rounded-full hover:bg-cyber-primary/40 transition border border-cyber-primary/30">
                                 <DownloadCloud size={16} /> Export CSV
                             </a>
                         )}
