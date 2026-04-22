@@ -1,5 +1,6 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useLocation } from 'react-router-dom'
 import { Video, Upload, AlertTriangle, CheckCircle, Film, BarChart2, Clock } from 'lucide-react'
 import axios from 'axios'
 import { useAuth } from '../context/AuthContext'
@@ -9,6 +10,7 @@ import { deepfakeAPI, commonAPI } from '../services/api'
 const API_BASE = 'http://localhost:8000'
 
 export default function DeepfakeVideoDetection() {
+  const location = useLocation()
   const [file, setFile] = useState(null)
   const [preview, setPreview] = useState(null)
   const [result, setResult] = useState(null)
@@ -20,6 +22,14 @@ export default function DeepfakeVideoDetection() {
   const [dragOver, setDragOver] = useState(false)
   const inputRef = useRef()
   const { currentUser } = useAuth()
+
+  useEffect(() => {
+    if (location.state?.prefilledData) {
+      const data = location.state.prefilledData
+      setResult(data)
+      setUploadedUrl(data.video_url || data.url)
+    }
+  }, [location.state])
 
   const handleFile = async (f) => {
     if (!f) return
@@ -107,11 +117,11 @@ export default function DeepfakeVideoDetection() {
             <p className="text-cyber-muted text-sm">MP4, MOV, AVI, GIF supported</p>
           </div>
 
-          {preview && (
+          {(preview || uploadedUrl) && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl overflow-hidden border border-cyber-border">
-              <video src={preview} controls className="w-full max-h-64 object-contain bg-black" />
+              <video src={preview || uploadedUrl} controls className="w-full max-h-64 object-contain bg-black" />
               <div className="p-3 bg-cyber-card border-t border-cyber-border">
-                <p className="text-cyber-muted text-xs truncate">{file.name} — {(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                <p className="text-cyber-muted text-xs truncate">{file?.name || 'Historical Scan'} — {file ? (file.size / 1024 / 1024).toFixed(2) + ' MB' : 'Remote Source'}</p>
               </div>
             </motion.div>
           )}

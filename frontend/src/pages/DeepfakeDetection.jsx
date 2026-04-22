@@ -1,5 +1,6 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useLocation } from 'react-router-dom'
 import {
   Upload,
   Image as ImageIcon,
@@ -18,6 +19,7 @@ import { useAuth } from '../context/AuthContext'
 import { saveToHistory } from '../services/history'
 
 export default function DeepfakeDetection() {
+  const location = useLocation()
   const [files, setFiles] = useState([])
   const [previews, setPreviews] = useState([])
   const [analyzing, setAnalyzing] = useState(false)
@@ -26,6 +28,14 @@ export default function DeepfakeDetection() {
   const [uploadedUrls, setUploadedUrls] = useState([])
   const [batchResults, setBatchResults] = useState(null)
   const [error, setError] = useState(null)
+
+  useEffect(() => {
+    if (location.state?.prefilledData) {
+      const data = location.state.prefilledData
+      setBatchResults(data.results || [])
+      setUploadedUrls(data.results?.map(r => r.cloudinary_url) || [])
+    }
+  }, [location.state])
   const [selectedImage, setSelectedImage] = useState(null)
   const fileInputRef = useRef(null)
   const { currentUser } = useAuth()
@@ -238,10 +248,10 @@ export default function DeepfakeDetection() {
                     <div className="flex items-center gap-3">
                       <div className="relative">
                         <img
-                          src={previews[i]}
+                          src={previews[i] || res.cloudinary_url}
                           alt="Analyzed"
                           className="w-12 h-12 object-cover rounded border border-cyber-border cursor-zoom-in hover:scale-105 transition-transform"
-                          onClick={() => setSelectedImage(previews[i])}
+                          onClick={() => setSelectedImage(previews[i] || res.cloudinary_url)}
                         />
                         <div className="absolute -top-1 -right-1">
                           {res.is_deepfake ? (

@@ -1,16 +1,24 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { useLocation } from 'react-router-dom'
 import { Upload, Banknote, Loader2, AlertTriangle, ShieldCheck, DownloadCloud } from 'lucide-react'
 import { creditCardAPI } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { saveToHistory } from '../services/history'
 
 export default function CreditCardFraud() {
+    const location = useLocation()
     const [file, setFile] = useState(null)
     const [isAnalyzing, setIsAnalyzing] = useState(false)
     const [result, setResult] = useState(null)
     const [error, setError] = useState(null)
     const { currentUser } = useAuth()
+
+    useEffect(() => {
+        if (location.state?.prefilledData) {
+            setResult(location.state.prefilledData)
+        }
+    }, [location.state])
 
     const handleFileChange = (e) => {
         const selectedFile = e.target.files[0]

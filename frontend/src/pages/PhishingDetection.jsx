@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useLocation } from 'react-router-dom'
 import {
   Link2,
   Search,
@@ -17,21 +18,58 @@ import {
 } from 'lucide-react'
 import { phishingAPI } from '../services/api'
 import { useAuth } from '../context/AuthContext'
-import { saveToHistory } from '../services/history'
+import { saveToHistory, getUserHistory } from '../services/history'
 
-const recentScans = [
-  { url: 'https://secure-banking-login.com', risk: 'high', time: '2 min ago' },
-  { url: 'https://google.com', risk: 'safe', time: '5 min ago' },
-  { url: 'https://paypa1-verify.net', risk: 'high', time: '8 min ago' },
-  { url: 'https://amazon.com', risk: 'safe', time: '12 min ago' },
-  { url: 'https://login-microsoft-365.xyz', risk: 'medium', time: '15 min ago' },
-]
+// Real history is now fetched dynamically
+
 
 export default function PhishingDetection() {
+  const location = useLocation()
   const [url, setUrl] = useState('')
   const [analyzing, setAnalyzing] = useState(false)
   const [result, setResult] = useState(null)
+  const [recentScans, setRecentScans] = useState([])
   const { currentUser } = useAuth()
+
+  useEffect(() => {
+    // Check for prefilled data from Alerts page
+    if (location.state?.prefilledData) {
+      const data = location.state.prefilledData
+      setUrl(data.url || '')
+      setResult({
+        ...data,
+        riskLevel: data.risk_level,
+        riskScore: data.risk_score?.toFixed(0) || 0,
+        indicators: {
+          domainAge: data.indicators?.domain_age,
+          sslCertificate: data.indicators?.ssl_certificate,
+          domainReputation: data.indicators?.domain_reputation,
+          urlFeatures: data.indicators?.url_features,
+          contentAnalysis: data.indicators?.content_analysis,
+          redirectChain: data.indicators?.redirect_chain
+        },
+        modelUsed: data.model_used,
+        processingTime: data.processing_time
+      })
+    }
+  }, [location.state])
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      if (currentUser) {
+        const hist = await getUserHistory(currentUser.uid)
+        const phishingHist = hist
+          .filter(item => item.scanType.includes('Phishing'))
+          .map(item => ({
+            url: item.data?.url || 'URL Scan',
+            risk: item.data?.is_phishing ? 'high' : (item.data?.risk_score > 50 ? 'medium' : 'safe'),
+            time: item.timestamp?.toDate ? item.timestamp.toDate().toLocaleTimeString() : 'Recent'
+          }))
+        setRecentScans(phishingHist.slice(0, 5))
+      }
+    }
+    fetchHistory()
+  }, [currentUser, result])
 
   const analyzeUrl = async (e) => {
     e.preventDefault()

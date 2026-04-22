@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Banknote, 
@@ -18,24 +18,10 @@ import {
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { amlAPI } from '../services/api'
 import { useAuth } from '../context/AuthContext'
-import { saveToHistory } from '../services/history'
+import { saveToHistory, getUserHistory } from '../services/history'
 
-const transactionHistory = [
-  { id: 'TXN-001', amount: 15000, type: 'Transfer', risk: 'high', time: '10:32 AM' },
-  { id: 'TXN-002', amount: 500, type: 'Deposit', risk: 'low', time: '10:28 AM' },
-  { id: 'TXN-003', amount: 75000, type: 'Wire', risk: 'high', time: '10:15 AM' },
-  { id: 'TXN-004', amount: 2500, type: 'Transfer', risk: 'medium', time: '09:58 AM' },
-  { id: 'TXN-005', amount: 890, type: 'Payment', risk: 'low', time: '09:45 AM' },
-]
+// Pattern data is now handled via state
 
-const patternData = [
-  { time: '00:00', normal: 120, suspicious: 5 },
-  { time: '04:00', normal: 45, suspicious: 2 },
-  { time: '08:00', normal: 180, suspicious: 8 },
-  { time: '12:00', normal: 250, suspicious: 15 },
-  { time: '16:00', normal: 220, suspicious: 12 },
-  { time: '20:00', normal: 150, suspicious: 18 },
-]
 
 export default function AMLDetection() {
   const { currentUser } = useAuth()
@@ -48,6 +34,34 @@ export default function AMLDetection() {
   })
   const [analyzing, setAnalyzing] = useState(false)
   const [result, setResult] = useState(null)
+  const [transactionHistory, setTransactionHistory] = useState([])
+  const [patternData, setPatternData] = useState([
+    { time: '00:00', normal: 120, suspicious: 5 },
+    { time: '04:00', normal: 45, suspicious: 2 },
+    { time: '08:00', normal: 180, suspicious: 8 },
+    { time: '12:00', normal: 250, suspicious: 15 },
+    { time: '16:00', normal: 220, suspicious: 12 },
+    { time: '20:00', normal: 150, suspicious: 18 },
+  ])
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      if (currentUser) {
+        const hist = await getUserHistory(currentUser.uid)
+        const amlHist = hist
+          .filter(item => item.scanType.includes('AML'))
+          .map(item => ({
+            id: item.data?.transaction_id || item.id.substring(0, 8),
+            amount: item.data?.amount || 0,
+            type: item.data?.transaction_type || 'Transfer',
+            risk: item.data?.risk_level || (item.data?.risk_score > 50 ? 'high' : 'low'),
+            time: item.timestamp?.toDate ? item.timestamp.toDate().toLocaleTimeString() : 'Recent'
+          }))
+        setTransactionHistory(amlHist)
+      }
+    }
+    fetchHistory()
+  }, [currentUser, result])
 
   const handleInputChange = (e) => {
     const { name, value } = e.target

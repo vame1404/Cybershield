@@ -1,11 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useLocation } from 'react-router-dom'
 import { Upload, ImageIcon, Loader2, AlertTriangle, CheckCircle, Search, XCircle, BarChart3, Sparkles } from 'lucide-react'
 import { aiGeneratedAPI, commonAPI } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { saveToHistory } from '../services/history'
 
 export default function AIGeneratedDetection() {
+    const location = useLocation()
     const [files, setFiles] = useState([])
     const [previews, setPreviews] = useState([])
     const [isAnalyzing, setIsAnalyzing] = useState(false)
@@ -16,6 +18,14 @@ export default function AIGeneratedDetection() {
     const [error, setError] = useState(null)
     const [selectedImage, setSelectedImage] = useState(null)
     const { currentUser } = useAuth()
+
+    useEffect(() => {
+        if (location.state?.prefilledData) {
+            const data = location.state.prefilledData
+            setBatchResults(data.results || [])
+            setUploadedUrls(data.results?.map(r => r.cloudinary_url) || [])
+        }
+    }, [location.state])
 
     const handleFileChange = async (e) => {
         const selectedFiles = Array.from(e.target.files)
@@ -148,10 +158,10 @@ export default function AIGeneratedDetection() {
                                         <div className="flex items-center gap-4">
                                             <div className="relative">
                                                 <img
-                                                    src={previews[i]}
+                                                    src={previews[i] || res.cloudinary_url}
                                                     alt="Analyzed"
                                                     className="w-12 h-12 object-cover rounded border border-cyber-border cursor-zoom-in hover:scale-105 transition-transform"
-                                                    onClick={() => setSelectedImage(previews[i])}
+                                                    onClick={() => setSelectedImage(previews[i] || res.cloudinary_url)}
                                                 />
                                                 <div className="absolute -top-1 -right-1">
                                                     {res.is_ai_generated ? (

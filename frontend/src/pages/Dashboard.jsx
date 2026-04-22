@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import {
   Shield,
   AlertTriangle,
@@ -14,37 +15,16 @@ import {
   ArrowDownRight,
   Image as ImageIcon,
   FileSearch,
-  Film
+  Film,
+  Sparkles
 } from 'lucide-react'
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { statsAPI } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { getUserHistory } from '../services/history'
 
-// Mock data for charts
-const threatTrendData = [
-  { name: 'Mon', deepfake: 12, phishing: 24, aml: 8 },
-  { name: 'Tue', deepfake: 19, phishing: 18, aml: 12 },
-  { name: 'Wed', deepfake: 8, phishing: 29, aml: 6 },
-  { name: 'Thu', deepfake: 15, phishing: 22, aml: 14 },
-  { name: 'Fri', deepfake: 22, phishing: 31, aml: 9 },
-  { name: 'Sat', deepfake: 6, phishing: 12, aml: 4 },
-  { name: 'Sun', deepfake: 9, phishing: 16, aml: 7 },
-]
+// Data is now calculated dynamically from history
 
-const riskDistribution = [
-  { name: 'Low Risk', value: 65, color: '#10b981' },
-  { name: 'Medium Risk', value: 25, color: '#fbbf24' },
-  { name: 'High Risk', value: 10, color: '#ff6b6b' },
-]
-
-const recentDetections = [
-  { id: 1, type: 'Deepfake', item: 'image_2024_001.jpg', risk: 'high', time: '2 min ago', module: 'Media AI' },
-  { id: 2, type: 'Phishing', item: 'secure-bank-login.net', risk: 'high', time: '5 min ago', module: 'URL Scanner' },
-  { id: 3, type: 'AML', item: 'TXN-789456123', risk: 'medium', time: '12 min ago', module: 'Financial' },
-  { id: 4, type: 'Phishing', item: 'paypa1-verify.com', risk: 'high', time: '18 min ago', module: 'URL Scanner' },
-  { id: 5, type: 'Deepfake', item: 'video_call_rec.mp4', risk: 'medium', time: '25 min ago', module: 'Media AI' },
-]
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -61,25 +41,43 @@ const itemVariants = {
 
 export default function Dashboard() {
   const { currentUser } = useAuth()
+  const navigate = useNavigate()
   const [history, setHistory] = useState([])
+  
+  const formatRelativeTime = (timestamp) => {
+    if (!timestamp) return 'Just now'
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
+    const now = new Date()
+    const diff = Math.floor((now - date) / 1000)
+
+    if (diff < 60) return 'Just now'
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
+    return date.toLocaleDateString()
+  }
   
   const [stats, setStats] = useState({
     totalScans: 0,
     threatsDetected: 0,
     riskScore: 0,
-    activeModules: 0
+    activeModules: 7
   })
+
+  // Dynamic Data States
+  const [threatTrendData, setThreatTrendData] = useState([])
+  const [riskDistribution, setRiskDistribution] = useState([])
+  const [moduleScans, setModuleScans] = useState({})
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
         const { data } = await statsAPI.get()
-        setStats({
+        setStats(prev => ({
+          ...prev,
           totalScans: data.total_scans,
           threatsDetected: data.threats_detected,
           riskScore: data.total_scans > 0 ? Math.max(0, 100 - (data.threats_detected / data.total_scans * 100)) : 100,
-          activeModules: data.active_modules
-        })
+        }))
       } catch (err) {
         console.error("Failed to fetch stats:", err)
       }
@@ -88,15 +86,76 @@ export default function Dashboard() {
     const fetchHistory = async () => {
       if (currentUser) {
         const hist = await getUserHistory(currentUser.uid)
-        setHistory(hist.slice(0, 10)) // Show top 10
+        setHistory(hist)
+        processHistoryData(hist)
       }
+    }
+
+    const processHistoryData = (hist) => {
+      // 1. Risk Distribution & Module Scans
+      let low = 0, medium = 0, high = 0
+      const scansByType = {}
+
+      hist.forEach(item => {
+        // Count by type
+        scansByType[item.scanType] = (scansByType[item.scanType] || 0) + 1
+
+        // Count risk levels
+        const isThreat = item.data?.is_phishing || 
+                         item.data?.is_ai_generated || 
+                         item.data?.is_deepfake || 
+                         item.data?.is_fraud ||
+                         item.data?.is_tampered ||
+                         (item.data?.results?.some(r => r.is_ai_generated || r.is_deepfake || r.is_tampered))
+
+        if (isThreat) high++
+        else if (item.data?.risk_score > 50 || (item.data?.confidence < 70 && item.data?.confidence > 0)) medium++
+        else low++
+      })
+
+      const total = hist.length || 1
+      setRiskDistribution([
+        { name: 'Low Risk', value: Math.round((low / total) * 100), color: '#10b981' },
+        { name: 'Medium Risk', value: Math.round((medium / total) * 100), color: '#fbbf24' },
+        { name: 'High Risk', value: Math.round((high / total) * 100), color: '#ff6b6b' },
+      ])
+
+      setModuleScans(scansByType)
+
+      // 2. Threat Trends (Last 7 days)
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+      const today = new Date().getDay()
+      const trend = []
+
+      for (let i = 6; i >= 0; i--) {
+        const dayIndex = (today - i + 7) % 7
+        trend.push({ name: days[dayIndex], deepfake: 0, phishing: 0, aml: 0 })
+      }
+
+      hist.forEach(item => {
+        const date = item.timestamp?.toDate ? item.timestamp.toDate() : new Date(item.timestamp)
+        const dayName = days[date.getDay()]
+        const dayData = trend.find(d => d.name === dayName)
+        
+        if (dayData) {
+          if (item.scanType.includes('Deepfake') || item.scanType.includes('AI')) dayData.deepfake++
+          if (item.scanType.includes('Phishing')) dayData.phishing++
+          if (item.scanType.includes('AML')) dayData.aml++
+        }
+      })
+      setThreatTrendData(trend)
     }
 
     fetchStats()
     fetchHistory()
-    const interval = setInterval(fetchStats, 5000)
-    return () => clearInterval(interval)
+    const statsInterval = setInterval(fetchStats, 5000)
+    const historyInterval = setInterval(fetchHistory, 10000)
+    return () => {
+      clearInterval(statsInterval)
+      clearInterval(historyInterval)
+    }
   }, [currentUser])
+
 
   return (
     <motion.div
@@ -260,10 +319,18 @@ export default function Dashboard() {
           <div className="space-y-4">
             <ModuleCard
               icon={ScanFace}
-              name="Media Authenticity"
-              description="Deepfake & AI content detection"
+              name="Deepfake Detection"
+              description="Face swap & manipulation identification"
               status="active"
-              scans={4521}
+              scans={moduleScans['Deepfake Image Batch'] || moduleScans['Deepfake Detection'] || 0}
+              color="purple"
+            />
+            <ModuleCard
+              icon={Film}
+              name="Deepfake Video"
+              description="Video temporal authenticity analysis"
+              status="active"
+              scans={moduleScans['Deepfake Video'] || 0}
               color="purple"
             />
             <ModuleCard
@@ -271,31 +338,39 @@ export default function Dashboard() {
               name="Phishing Intelligence"
               description="URL & email threat detection"
               status="active"
-              scans={8934}
+              scans={moduleScans['Phishing URL Scan'] || moduleScans['Phishing Detection'] || 0}
               color="orange"
             />
             <ModuleCard
               icon={Banknote}
-              name="Financial Crime (AML)"
-              description="Transaction anomaly detection"
+              name="Credit Card Fraud"
+              description="Financial transaction anomaly detection"
               status="active"
-              scans={2392}
+              scans={moduleScans['Credit Card Fraud Batch'] || moduleScans['AML Transaction Scan'] || 0}
               color="emerald"
             />
             <ModuleCard
               icon={ImageIcon}
-              name="AI Generation Audit"
-              description="Synthetic content identification"
+              name="AI Image Detect"
+              description="Synthetic image identification"
               status="active"
-              scans={1528}
+              scans={moduleScans['AI Generated Image Batch'] || 0}
               color="pink"
             />
             <ModuleCard
+              icon={Sparkles}
+              name="AI Video Detect"
+              description="AI-generated video content audit"
+              status="active"
+              scans={moduleScans['AI Generated Video'] || 0}
+              color="violet"
+            />
+            <ModuleCard
               icon={FileSearch}
-              name="Document Verification"
+              name="Forged Document"
               description="Metadata & ELA forensic analysis"
               status="active"
-              scans={942}
+              scans={moduleScans['Forensic Document Analysis'] || 0}
               color="indigo"
             />
           </div>
@@ -305,7 +380,12 @@ export default function Dashboard() {
         <motion.div variants={itemVariants} className="cyber-card rounded-xl p-6">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-lg font-semibold text-cyber-text">Recent Detections</h3>
-            <button className="text-sm text-cyber-primary hover:underline">View All</button>
+            <button 
+              onClick={() => navigate('/alerts')}
+              className="text-sm text-cyber-primary hover:underline"
+            >
+              View All
+            </button>
           </div>
           <div className="space-y-3">
             {history.length === 0 ? (
@@ -375,7 +455,7 @@ export default function Dashboard() {
                       </span>
                       {doc.timestamp && (
                         <p className="text-[10px] text-cyber-muted mt-1">
-                          {doc.timestamp.toDate ? doc.timestamp.toDate().toLocaleTimeString() : 'Just now'}
+                          {formatRelativeTime(doc.timestamp)}
                         </p>
                       )}
                     </div>
@@ -434,6 +514,9 @@ function ModuleCard({ icon: Icon, name, description, status, scans, color }) {
     purple: 'bg-purple-500/20 text-purple-400',
     orange: 'bg-orange-500/20 text-orange-400',
     emerald: 'bg-emerald-500/20 text-emerald-400',
+    pink: 'bg-pink-500/20 text-pink-400',
+    violet: 'bg-violet-500/20 text-violet-400',
+    indigo: 'bg-indigo-500/20 text-indigo-400',
   }
 
   return (
