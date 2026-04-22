@@ -54,29 +54,27 @@ logs/
 npm-debug.log*
 
 # ===========================
-# Large ML Model Files
+# Large ML Model Files (Tracked by Git LFS)
 # ===========================
-*.pt
-*.pth
-*.h5
-*.keras
-*.pkl
-*.joblib
-*.bin
-*.onnx
-*.pb
-*.tflite
-*.caffemodel
-*.model
-variables.data-*
-variables.index
-saved_model.pb
+# *.pt
+# *.pth
+# *.h5
+# *.keras
+# *.pkl
+# *.joblib
+# *.bin
+# *.onnx
+# *.pb
+# *.tflite
+# *.caffemodel
+# *.model
 
 # ===========================
-# Large Datasets / CSVs (>1MB)
+# Large Datasets / CSVs
 # ===========================
-Cybershield-2/databases/creditcard.csv
-Cybershield-2/databases/phishing.csv
+# Cybershield-2/databases/creditcard.csv
+# Cybershield-2/databases/phishing.csv
+
 Cybershield-2/ai-generated/ai-vs-human-db/train.csv
 Cybershield-2/ai-generated/pred_probabilities.csv
 Cybershield-2/ai-generated/submission.csv
