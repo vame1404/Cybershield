@@ -1,0 +1,131 @@
+# ===========================
+# Dependencies
+# ===========================
+node_modules/
+venv/
+.venv/
+env/
+
+# ===========================
+# Python
+# ===========================
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+*.egg
+
+# ===========================
+# Build / Dist
+# ===========================
+dist/
+build/
+
+# ===========================
+# Environment Variables
+# ===========================
+.env
+.env.local
+.env.*.local
+*.local
+
+# ===========================
+# IDE / Editor
+# ===========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-workspace
+*.sublime-project
+
+# ===========================
+# OS Files
+# ===========================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===========================
+# Logs
+# ===========================
+*.log
+logs/
+npm-debug.log*
+
+# ===========================
+# Large ML Model Files (Tracked by Git LFS)
+# ===========================
+# *.pt
+# *.pth
+# *.h5
+# *.keras
+# *.pkl
+# *.joblib
+# *.bin
+# *.onnx
+# *.pb
+# *.tflite
+# *.caffemodel
+# *.model
+
+# ===========================
+# Large Datasets / CSVs
+# ===========================
+databases/
+*.csv
+
+# ===========================
+# Dataset Directories (images/training data)
+# ===========================
+deepfake/Dataset(1)/
+ai-generated/ai-vs-human-db/
+ai-generated/archive/
+fake-document/document-tampering-detection/images/
+phishing/phishing-db/
+
+# ===========================
+# Jupyter Notebook Checkpoints
+# ===========================
+.ipynb_checkpoints/
+
+# ===========================
+# Temporary / Upload Files
+# ===========================
+uploads/
+static/uploads/
+temp/
+*.tmp
+tempresaved.jpg
+temp_ela.jpg
+
+# ===========================
+# Database Files
+# ===========================
+*.db
+*.sqlite3
+
+# ===========================
+# Cache
+# ===========================
+.cache/
+.pytest_cache/
+
+# ===========================
+# Coverage
+# ===========================
+coverage/
+.coverage
+htmlcov/
+
+# ===========================
+# Credentials / Secrets
+# ===========================
+kaggle.json
+
+# ===========================
+# Nested .git directories (submodules we don't want)
+# ===========================
+Cybershield-2/fake-document/document-tampering-detection/.git/
+CYBERSHIELD-AI-SECURITY-PLATFORM/.git/
+.git_bak/

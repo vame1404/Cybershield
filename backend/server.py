@@ -56,6 +56,15 @@ def upload_to_cloudinary(file_bytes, resource_type="auto"):
 
 app = FastAPI(title="Cybershield 5-in-1 Unified API")
 
+@app.get("/")
+def home():
+    return {
+        "status": "CyberShield AI API is Live",
+        "version": "1.0.0",
+        "platform": "Hugging Face Spaces",
+        "documentation": "/docs"
+    }
+
 @app.post("/api/v1/upload")
 async def upload_file(file: UploadFile = File(...)):
     contents = await file.read()
