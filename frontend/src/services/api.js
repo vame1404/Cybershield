@@ -6,6 +6,7 @@
 import axios from 'axios'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://vame1404-cybershield.hf.space'
+console.log('[CyberShield] Connection Mode: Production (HF Space)');
 
 // Create axios instance with default config
 const api = axios.create({

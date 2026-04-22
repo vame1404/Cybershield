@@ -165,10 +165,16 @@ export default function Dashboard() {
       className="space-y-6"
     >
       {/* Header */}
-      <motion.div variants={itemVariants} className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-display font-bold text-gradient">Security Dashboard</h1>
-          <p className="text-cyber-muted mt-1">Real-time threat monitoring and risk analysis</p>
+        <div className="flex items-center gap-3">
+          <div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-display font-bold text-gradient">Security Dashboard</h1>
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30 animate-pulse">
+                PROD
+              </span>
+            </div>
+            <p className="text-cyber-muted mt-1">Real-time threat monitoring and risk analysis</p>
+          </div>
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-cyber-card border border-cyber-border">
