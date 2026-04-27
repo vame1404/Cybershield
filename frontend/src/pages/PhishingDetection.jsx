@@ -28,6 +28,7 @@ export default function PhishingDetection() {
   const [url, setUrl] = useState('')
   const [analyzing, setAnalyzing] = useState(false)
   const [result, setResult] = useState(null)
+  const [error, setError] = useState(null)
   const [recentScans, setRecentScans] = useState([])
   const { currentUser } = useAuth()
 
@@ -76,13 +77,15 @@ export default function PhishingDetection() {
     if (!url.trim()) return
 
     setAnalyzing(true)
+    setResult(null)   // Clear old result immediately
+    setError(null)    // Clear old error
 
     try {
       const { data } = await phishingAPI.analyze(url)
       setResult({
         ...data,
         riskLevel: data.risk_level,
-        riskScore: data.risk_score.toFixed(0),
+        riskScore: Number(data.risk_score).toFixed(0),
         indicators: {
           domainAge: data.indicators.domain_age,
           sslCertificate: data.indicators.ssl_certificate,
@@ -100,6 +103,7 @@ export default function PhishingDetection() {
       }
     } catch (err) {
       console.error(err)
+      setError('Analysis failed. The backend returned an error. Please try again.')
     }
 
     setAnalyzing(false)
@@ -108,6 +112,7 @@ export default function PhishingDetection() {
   const resetAnalysis = () => {
     setUrl('')
     setResult(null)
+    setError(null)
   }
 
   return (
@@ -185,6 +190,24 @@ export default function PhishingDetection() {
                   <p className="animate-pulse" style={{ animationDelay: '0.2s' }}>• Extracting URL features...</p>
                   <p className="animate-pulse" style={{ animationDelay: '0.4s' }}>• Running ML classification...</p>
                 </div>
+              </motion.div>
+            ) : error ? (
+              <motion.div
+                key="error"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="flex flex-col items-center justify-center py-12 text-center"
+              >
+                <XCircle className="w-12 h-12 text-red-500 mb-4" />
+                <p className="text-red-400 font-medium">Analysis Failed</p>
+                <p className="text-sm text-cyber-muted mt-2 max-w-xs">{error}</p>
+                <button
+                  onClick={() => setError(null)}
+                  className="mt-4 px-4 py-2 rounded-lg border border-cyber-border hover:border-red-500/50 text-cyber-muted hover:text-red-400 text-sm transition-colors"
+                >
+                  Try Again
+                </button>
               </motion.div>
             ) : result ? (
               <motion.div
