@@ -1,8 +1,6 @@
-import pandas as pd
 import re
-import requests
-from urllib.parse import urlparse
 import socket
+from urllib.parse import urlparse
 
 # -----------------------------
 # Feature Functions
@@ -50,71 +48,68 @@ def dns_record(domain):
     try:
         socket.gethostbyname(domain)
         return 0
-    except:
+    except Exception:
         return 1
 
 
 def web_traffic(domain):
-    # Placeholder — real Alexa API removed
     return 0
 
 
 def domain_age(domain):
-    # Placeholder unless WHOIS used
     return 0
 
 
 def domain_end(domain):
-    # Placeholder unless WHOIS used
     return 0
 
 
 def html_features(url):
+    """
+    Safely fetch HTML features with a short timeout.
+    Returns zeros on any failure to avoid blocking the API.
+    """
     try:
-        response = requests.get(url, timeout=5)
+        import requests as _req
+        response = _req.get(url, timeout=3, allow_redirects=True)
         html = response.text.lower()
-
         iframe = 1 if "<iframe" in html else 0
         mouse_over = 1 if "onmouseover" in html else 0
         right_click = 1 if "event.button==2" in html else 0
         forwards = 1 if len(response.history) > 0 else 0
-
         return iframe, mouse_over, right_click, forwards
-
-    except:
+    except Exception:
         return 0, 0, 0, 0
 
 
 # -----------------------------
 # Main Extraction Function
+# Returns a plain Python list (not a DataFrame) for model compatibility
 # -----------------------------
 
 def extract_features(url):
-
     parsed = urlparse(url)
     domain = parsed.netloc
 
     iframe, mouse_over, right_click, forwards = html_features(url)
 
-    features = {
-        'Have_IP': having_ip(url),
-        'Have_At': have_at_symbol(url),
-        'URL_Length': get_url_length(url),
-        'URL_Depth': get_depth(url),
-        'Redirection': redirection(url),
-        'https_Domain': https_in_domain(url),
-        'TinyURL': tiny_url(url),
-        'Prefix/Suffix': prefix_suffix(url),
-        'DNS_Record': dns_record(domain),
-        'Web_Traffic': web_traffic(domain),
-        'Domain_Age': domain_age(domain),
-        'Domain_End': domain_end(domain),
-        'iFrame': iframe,
-        'Mouse_Over': mouse_over,
-        'Right_Click': right_click,
-        'Web_Forwards': forwards
-    }
+    features = [
+        having_ip(url),           # Have_IP
+        have_at_symbol(url),       # Have_At
+        get_url_length(url),       # URL_Length
+        get_depth(url),            # URL_Depth
+        redirection(url),          # Redirection
+        https_in_domain(url),      # https_Domain
+        tiny_url(url),             # TinyURL
+        prefix_suffix(url),        # Prefix/Suffix
+        dns_record(domain),        # DNS_Record
+        web_traffic(domain),       # Web_Traffic
+        domain_age(domain),        # Domain_Age
+        domain_end(domain),        # Domain_End
+        iframe,                    # iFrame
+        mouse_over,                # Mouse_Over
+        right_click,               # Right_Click
+        forwards                   # Web_Forwards
+    ]
 
-    df = pd.DataFrame([features])
-
-    return df
+    return features
