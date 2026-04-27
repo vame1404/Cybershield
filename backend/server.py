@@ -674,12 +674,12 @@ async def analyze_phishing(request: URLAnalysisRequest):
         try:
             features = phish_extract(url)
             features_arr = np.array(features).reshape(1, -1)
-            pred = phish_model.predict(features_arr)[0]
+            pred = int(phish_model.predict(features_arr)[0])
             probs = phish_model.predict_proba(features_arr)[0]
             phishing_conf = float(probs[1] * 100)
             if pred == 1 and phishing_conf < 60:
                 pred = 0
-            is_phish = pred == 1
+            is_phish = bool(pred == 1)
             model_used = "XGBoostClassifier"
         except Exception as e:
             print(f"[Phishing] Model inference failed: {e}, using heuristic fallback")
